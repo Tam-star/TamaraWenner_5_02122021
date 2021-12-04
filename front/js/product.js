@@ -17,7 +17,7 @@ if(localStorage.getItem("cart")){
     cart = JSON.parse(localStorage.getItem("cart"));
 }
 
-
+//Vérifie si un objet est vide ou non
 function isObjectEmpty(obj){
     if(Object.getOwnPropertyNames(obj).length==0)
         return true
@@ -25,6 +25,7 @@ function isObjectEmpty(obj){
         return false
 }
 
+//Récupère un produit dans la base de donnée
 function getOneProduct(id){
     return new Promise((resolve,reject)=>{
       const url = 'http://localhost:3000/api/products/'+id;
@@ -37,59 +38,67 @@ function getOneProduct(id){
       fetch(url, options)
        .then(reponse => reponse.json())
         .then(data=>{
-         if(isObjectEmpty(data))
-            reject()
-         else{
             thisProduct=data;
-            resolve(); 
-         }   
+            resolve();  
       })   
       .catch(err => console.log("Il y a erreur", err))
-      .catch(err =>console.log("Il y a erreur json", err))
-    
     });
 }
 
+//Fonction utilisée si l'identifiant écrit dans l'URL n'existe pas dans la liste des produits
 function noExistingId(){
-    itemTitle.textContent="This Kanap does not exist, sorry"
+    itemTitle.textContent="ERROR 404 : This Kanap does not exist, sorry"
     addButton.disabled =true;
 }
 
+//Ecrit les détails du produit dans la page HTML
+function fillProductDetails(){
+    itemImg.innerHTML = `<img src="${thisProduct.imageUrl}" alt="Photographie d'un canapé">`
+    itemTitle.textContent=thisProduct.name;
+    itemPrice.textContent= thisProduct.price;
+    itemDescription.textContent=thisProduct.description;
 
-async function logProduct(){
-    try {
-        await getOneProduct(productId);
-        const imgElement = document.createElement("img")
-        imgElement.setAttribute("src", thisProduct.imageUrl)
-        imgElement.setAttribute("alt", "Photographie d'un canapé")
-        itemImg.appendChild(imgElement)
-
-        itemTitle.textContent=thisProduct.name;
-        itemPrice.textContent= thisProduct.price;
-        itemDescription.textContent=thisProduct.description;
-
-        const listOfColors = thisProduct.colors;
-        listOfColors.map(color => {
-            const colorElement = document.createElement("option");
-            colorElement.textContent=color;
-            colorElement.setAttribute("value", color)
-            itemColors.appendChild(colorElement)
-        })
-
-    } catch (error) {
-        console.log("didnt work")
-        noExistingId()
-    }   
+    const listOfColors = thisProduct.colors;
+    listOfColors.map(color => {
+        itemColors.innerHTML+=`<option value="${color}">${color}</option>`
+    })
 }
 
-addButton.addEventListener("click", () => {
-    alert("Produit ajouté")
-    cart.push({
-        "id": productId,
-        "quantity": document.getElementById("quantity").value,
-        "color": itemColors.options[itemColors.selectedIndex].value
-    })
+async function logProduct(){
+    await getOneProduct(productId);
+    if(isObjectEmpty(thisProduct)){
+        noExistingId()
+        console.log("pas de data")
+    }
+    else{
+        fillProductDetails();
+    }      
+}
 
+//Ajoute le produit sélectionné au panier
+addButton.addEventListener("click", () => {
+    
+    if(itemColors.options[itemColors.selectedIndex].value=="")
+        alert("Vous devez choisir une couleur")
+    else if(document.getElementById("quantity").value==0 || document.getElementById("quantity").value>100)
+        alert("Vous devez sélectionner entre 1 et 100 produit pour pouvoir l'ajouter au panier")
+    else{
+        alert("Produit ajouté")
+        const productToAdd = {
+            "id": productId,
+            "quantity": parseInt(document.getElementById("quantity").value),
+            "color": itemColors.options[itemColors.selectedIndex].value
+        }
+        let productNotInCart = true;
+        cart.map(product => {
+            if(product.id == productToAdd.id && product.color == productToAdd.color){
+                product.quantity+=productToAdd.quantity;
+                productNotInCart=false;
+            }
+        })
+        if(productNotInCart)
+            cart.push(productToAdd)
+    }
     localStorage.setItem("cart", JSON.stringify(cart));
 })
 

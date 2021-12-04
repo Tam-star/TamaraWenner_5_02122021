@@ -1,67 +1,132 @@
 const cartItems = document.getElementById("cart__items")
 
-const newArticle = document.createElement("article")
-newArticle.classList.add("cart__item")
-newArticle.setAttribute("data-id", "12345")
-newArticle.setAttribute("data-color", "mycolor")
+let cart = new Array();
 
-const divImg = document.createElement("div")
-divImg.classList.add("cart__item__img")
-const productImg = document.createElement("img")
-productImg.setAttribute("src", "../images/product01.jpg")
-productImg.setAttribute("alt", "Photographie d'un canapé")
+if(localStorage.getItem("cart")){
+    console.log("Mon cart : ", cart)
+    cart = JSON.parse(localStorage.getItem("cart"));
+    console.log("Mon cart : ", cart)
+    addEachProductCard().then(response => {
+        const myInputArray = document.getElementsByClassName("itemQuantity")
+        addEventToInput(myInputArray)
+        const myDeleteArray = document.getElementsByClassName("deleteItem")
+        addEventToDelete(myDeleteArray)
+    })
+}
+else{
+    cartItems.innerHTML=`<h2>Your cart is empty</h2>`
+}
 
-const divContent = document.createElement("div")
-divContent.classList.add("cart__item__content")
+//Récupère un produit dans la base de donnée
+function getOneProduct(id){
+    return new Promise((resolve,reject)=>{
+      const url = 'http://localhost:3000/api/products/'+id;
+      const options={
+          method : 'GET', 
+          headers : {
+            Accept: 'application/json', 
+            'Content-type' : 'application/json'}
+        }
+      fetch(url, options)
+       .then(reponse => reponse.json())
+        .then(data=>{
+            resolve(data);  
+      })   
+      .catch(err => console.log("Il y a erreur", err))
+    });
+}
 
-const divContentDescription = document.createElement("div")
-divContentDescription.classList.add("cart__item__content__description")
-const descriptionTitle = document.createElement("h2")
-descriptionTitle.textContent="Nom du produit"
-const descriptionColor = document.createElement("p")
-descriptionColor.textContent="Vert"
-const descriptionPrice = document.createElement("p")
-descriptionPrice.textContent="42,00$"
-
-divContentDescription.appendChild(descriptionTitle)
-divContentDescription.appendChild(descriptionColor)
-divContentDescription.appendChild(descriptionPrice)
-
-const divSettings = document.createElement("div")
-divSettings.classList.add("cart__item__content__settings")
-
-const divSettingsQuantity = document.createElement("div")
-divSettingsQuantity.classList.add("cart__item__content__settings__quantity")
-
-const quantity = document.createElement("p")
-quantity.textContent="Qté : "
-const inputQuantity = document.createElement("input")
-inputQuantity.setAttribute("type", "number")
-inputQuantity.setAttribute("name", "itemQuantity")
-inputQuantity.setAttribute("min", "1")
-inputQuantity.setAttribute("max", "100")
-inputQuantity.setAttribute("value", "42")
-inputQuantity.classList.add("itemQuantity")
-
-divSettingsQuantity.appendChild(quantity)
-divSettingsQuantity.appendChild(inputQuantity)
+function addEachProductCard(){
+    let processDone = false;
+    return new Promise((resolve,reject)=>{
+        cart.map(product => {
+            fillCartDetails(product)
+            .then( response =>{
+                const myInput = document.getElementsByClassName("itemQuantity");
+                if(myInput.length==cart.length)
+                    processDone = true;
+                if(processDone)
+                    resolve()
+            })
+        })
+    })
+}
 
 
-const divDelete = document.createElement("div")
-divDelete.classList.add("cart__item__content__settings__delete")
-const deleteItem = document.createElement("p")
-deleteItem.classList.add("deleteItem")
-deleteItem.textContent = "Supprimer"
+async function fillCartDetails({id, quantity, color}){
+    const productInCart = await getOneProduct(id);
+    console.log("mon product in cart : ", productInCart)
+    return new Promise ((resolve, reject) => {
+    cartItems.innerHTML+=`<article class="cart__item" data-id="${id}" data-color="${color}">
+                            <div class="cart__item__img">
+                            <img src="${productInCart.imageUrl}" alt="Photographie d'un canapé">
+                            </div>
+                            <div class="cart__item__content">
+                            <div class="cart__item__content__description">
+                                <h2>${productInCart.name}</h2>
+                                <p>${color}</p>
+                                <p>${productInCart.price} €</p>
+                            </div>
+                            <div class="cart__item__content__settings">
+                                <div class="cart__item__content__settings__quantity">
+                                <p>Qté : </p>
+                                <input type="number" class="itemQuantity" name="itemQuantity" min="1" max="100" value="${quantity}">
+                                </div>
+                                <div class="cart__item__content__settings__delete">
+                                <p class="deleteItem">Supprimer</p>
+                                </div>
+                            </div>
+                            </div>
+                        </article> `
 
-divDelete.appendChild(deleteItem)
+    // const myInputElements = document.getElementsByClassName("itemQuantity");
+    // for(let i=0; i<myInputElements.length;i++){
+    //     myInputElements[i].addEventListener('change', (event) =>{
+    //         console.log("tu as changé")  
+    //         const newQuantity = event.target.value
+    //         cart[i].quantity = parseInt(newQuantity);
+    //         localStorage.setItem("cart", JSON.stringify(cart));
+    //         console.log("La nouvelle quantité est : "+ newQuantity)
+    //     })
+    // }
 
-divSettings.appendChild(divSettingsQuantity)
-divSettings.appendChild(divDelete)
+   
 
-divContent.appendChild(divContentDescription)
-divContent.appendChild(divSettings)
+    resolve()
+    })   
+}
 
-newArticle.appendChild(divImg)
-newArticle.appendChild(divContent)
 
-cartItems.appendChild(newArticle)
+function addEventToInput(inputArray){
+    for(let i=0; i<inputArray.length;i++)
+    {
+        console.log("Event input added")
+        inputArray[i].addEventListener("change", ()=>{
+               let newQuantity = inputArray[i].value 
+               cart[i].quantity = parseInt(newQuantity);
+               localStorage.setItem("cart", JSON.stringify(cart));
+         })
+    }
+}
+
+function addEventToDelete(deleteArray){
+    for(let i=0; i<deleteArray.length;i++)
+    {
+        console.log("Event delete added")
+        deleteArray[i].addEventListener("click", ()=>{
+               const elementToDelete = deleteArray[i].closest("article")
+               cartItems.removeChild(elementToDelete)
+               cart.splice(i,1)
+               localStorage.setItem("cart", JSON.stringify(cart));
+         })
+    }
+
+}
+
+// function changeQuantityHandler(event){
+//     const productArticle = event.target.closest("article")
+//     const productId = productArticle.dataset.id
+//     const productColor = productArticle.dataset.color
+//     alert("Vous avez cliqué sur le canapé avec l'identifiant "+productId+" et la couleur" + productColor)
+
+// }
