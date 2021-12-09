@@ -9,80 +9,80 @@ const addButton = document.getElementById("addToCart")
 const productUrl = new URLSearchParams(window.location.search)
 const productId = productUrl.get('id')
 
-let thisProduct=[];
-let cart = new Array();
+let thisProduct = [];
+let cart = [];
 
-if(localStorage.getItem("cart")){
-    console.log("un cart existe!")
+//Vérifie s'il y a déjà un panier existant dans le localStorage
+if (localStorage.getItem("cart")) {
     cart = JSON.parse(localStorage.getItem("cart"));
 }
 
 //Vérifie si un objet est vide ou non
-function isObjectEmpty(obj){
-    if(Object.getOwnPropertyNames(obj).length==0)
-        return true
-    else
-        return false
+function isObjectEmpty(obj) {
+    return (Object.getOwnPropertyNames(obj).length === 0)
 }
 
 //Récupère un produit dans la base de donnée
-function getOneProduct(id){
-    return new Promise((resolve,reject)=>{
-      const url = 'http://localhost:3000/api/products/'+id;
-      const options={
-          method : 'GET', 
-          headers : {
-            Accept: 'application/json', 
-            'Content-type' : 'application/json'}
+function getOneProduct(id) {
+    return new Promise((resolve, reject) => {
+        const url = 'http://localhost:3000/api/products/' + id;
+        const options = {
+            method: 'GET',
+            headers: {
+                Accept: 'application/json',
+                'Content-type': 'application/json'
+            }
         }
-      fetch(url, options)
-       .then(reponse => reponse.json())
-        .then(data=>{
-            thisProduct=data;
-            resolve();  
-      })   
-      .catch(err => console.log("Il y a erreur", err))
+        fetch(url, options)
+            .then(reponse => reponse.json())
+            .then(data => {
+                thisProduct = data;
+                resolve();
+            })
+            .catch(err => console.log("Il y a erreur", err))
     });
 }
 
+//Vérifie si les données du produit récupéré existe bien
+async function logProduct() {
+    await getOneProduct(productId);
+    if (isObjectEmpty(thisProduct)) {
+        noExistingId()
+    }
+    else {
+        fillProductDetails();
+    }
+}
+
+
 //Fonction utilisée si l'identifiant écrit dans l'URL n'existe pas dans la liste des produits
-function noExistingId(){
-    itemTitle.textContent="ERROR 404 : This Kanap does not exist, sorry"
-    addButton.disabled =true;
+function noExistingId() {
+    itemTitle.textContent = "ERREUR 404 : Ce canapé n'existe pas. Désolé."
+    addButton.disabled = true;
 }
 
 //Ecrit les détails du produit dans la page HTML
-function fillProductDetails(){
+function fillProductDetails() {
     itemImg.innerHTML = `<img src="${thisProduct.imageUrl}" alt="Photographie d'un canapé">`
-    itemTitle.textContent=thisProduct.name;
-    itemPrice.textContent= thisProduct.price;
-    itemDescription.textContent=thisProduct.description;
+    itemTitle.textContent = thisProduct.name;
+    itemPrice.textContent = thisProduct.price;
+    itemDescription.textContent = thisProduct.description;
 
     const listOfColors = thisProduct.colors;
     listOfColors.map(color => {
-        itemColors.innerHTML+=`<option value="${color}">${color}</option>`
+        itemColors.innerHTML += `<option value="${color}">${color}</option>`
     })
 }
 
-async function logProduct(){
-    await getOneProduct(productId);
-    if(isObjectEmpty(thisProduct)){
-        noExistingId()
-        console.log("pas de data")
-    }
-    else{
-        fillProductDetails();
-    }      
-}
 
 //Ajoute le produit sélectionné au panier
 addButton.addEventListener("click", () => {
-    
-    if(itemColors.options[itemColors.selectedIndex].value=="")
+
+    if (itemColors.options[itemColors.selectedIndex].value === "")
         alert("Vous devez choisir une couleur")
-    else if(document.getElementById("quantity").value==0 || document.getElementById("quantity").value>100)
+    else if (document.getElementById("quantity").value === 0 || document.getElementById("quantity").value > 100)
         alert("Vous devez sélectionner entre 1 et 100 produit pour pouvoir l'ajouter au panier")
-    else{
+    else {
         alert("Produit ajouté")
         const productToAdd = {
             "id": productId,
@@ -91,12 +91,12 @@ addButton.addEventListener("click", () => {
         }
         let productNotInCart = true;
         cart.map(product => {
-            if(product.id == productToAdd.id && product.color == productToAdd.color){
-                product.quantity+=productToAdd.quantity;
-                productNotInCart=false;
+            if (product.id === productToAdd.id && product.color === productToAdd.color) {
+                product.quantity += productToAdd.quantity;
+                productNotInCart = false;
             }
         })
-        if(productNotInCart)
+        if (productNotInCart)
             cart.push(productToAdd)
     }
     localStorage.setItem("cart", JSON.stringify(cart));
@@ -104,4 +104,3 @@ addButton.addEventListener("click", () => {
 
 logProduct()
 
-console.log("My cart : ",cart)
