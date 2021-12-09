@@ -26,16 +26,15 @@ const confirmationOrderId = document.getElementById("orderId")
 let cart = [];
 let totalQuantity = []
 let totalPrice = []
+let itemProduct = '';
 
 document.addEventListener("DOMContentLoaded", (event) => {
     console.log("DOM entièrement chargé et analysé");
-  });
+});
 
 //Comme cart.html et confirmation.html utilise le même fichier JS, on utile un if/else if pour savoir dans quel page on se trouve
 //Sinon on obtient des erreurs dans la console car des élements de cart.html n'exite pas dans confirmation.html et vice versa
 if (document.URL.includes("cart.html")) {
-
-   
 
     let readyToSendForm = true;
 
@@ -46,24 +45,26 @@ if (document.URL.includes("cart.html")) {
             totalQuantity.push(cart[i].quantity)
         }
 
-        //Utilisation de promises afin de pouvoir récupérer l'ensemble des inputs et des boutons Supprimer créés pour leur affecter des évènements
-        //Sans promise, myInputArray et myDeleteArray seraient vides car les éléments n'auraient pas encore eu le temps de se créer
-        addEachProductCard().then(response => {
-            calculTotalQuantity(totalQuantity)
-            calculTotalPrice(totalPrice, totalQuantity)
-            const myInputArray = document.getElementsByClassName("itemQuantity")
-            for (let i = 0; i < myInputArray.length; i++) {
-                myInputArray[i].addEventListener('change', changeElement)
-            }
-            const myDeleteArray = document.getElementsByClassName("deleteItem")
-            for (let i = 0; i < myDeleteArray.length; i++) {
-                myDeleteArray[i].addEventListener('click', deleteElement)
-            }
+        cart.forEach(element => {
+            fillCartDetails(element).then(response => {
+                if(element === cart[cart.length-1]){
+                    console.log("last item")
+                    cartItems.innerHTML = itemProduct
+                    updateTotals()
+                    const myInputArray = document.getElementsByClassName("itemQuantity")
+                    for (let i = 0; i < myInputArray.length; i++) {
+                        myInputArray[i].addEventListener('change', changeElement)
+                    }
+                    const myDeleteArray = document.getElementsByClassName("deleteItem")
+                    for (let i = 0; i < myDeleteArray.length; i++) {
+                        myDeleteArray[i].addEventListener('click', deleteElement)
+                    }
+                }
 
-            document.addEventListener("DOMContentLoaded", (event) => {
-                console.log("DOM entièrement chargé et analysé");
-              });
-        })
+            })
+
+        });
+
     }
 
 
@@ -99,7 +100,7 @@ if (document.URL.includes("cart.html")) {
 
     orderForm.addEventListener('submit', (e) => {
         e.preventDefault();
-        //Au cas où l'utilisateur supprimerait l'attribut 'required' dans le HTML, on vérifie que le formulaire est bien rempli
+        //On vérifie que les entrées du formulaire ne sont pas vides
         if (firstNameInput.value === '' || lastNameInput.value === '' || addressInput.value === '' || cityInput.value === '' || emailInput.value === '' || !readyToSendForm) {
             alert("Nous ne pouvons pas valider votre commande, le formulaire n'a pas été correctement rempli.")
         }
@@ -136,32 +137,26 @@ else if (document.URL.includes("confirmation.html")) {
 
 //Récupère un produit dans l'API
 function getOneProduct(id) {
-    return new Promise((resolve, reject) => {
-        const url = 'http://localhost:3000/api/products/' + id;
-        const options = {
-            method: 'GET',
-            headers: {
-                Accept: 'application/json',
-                'Content-type': 'application/json'
-            }
+    const url = 'http://localhost:3000/api/products/' + id;
+    const options = {
+        method: 'GET',
+        headers: {
+            Accept: 'application/json',
+            'Content-type': 'application/json'
         }
-        fetch(url, options)
-            .then(reponse => reponse.json())
-            .then(data => {
-                totalPrice.push(data.price);
-                resolve(data);
-            })
-            .catch(err => console.log("Il y a erreur", err))
-    });
+    }
+    return fetch(url, options)
+        .then(reponse => reponse.json())
+        .catch(err => console.log("Il y a erreur", err))
 }
 
 
 
-//Affiche les détails du produit dans le panier
+//Crée une card du produit dans le panier
 async function fillCartDetails({ id, quantity, color }) {
     const productInCart = await getOneProduct(id);
-    return new Promise((resolve, reject) => {
-        cartItems.innerHTML += `<article class="cart__item" data-id="${id}" data-color="${color}">
+    totalPrice.push(productInCart.price);
+    itemProduct += `<article class="cart__item" data-id="${id}" data-color="${color}">
                             <div class="cart__item__img">
                             <img src="${productInCart.imageUrl}" alt="Photographie d'un canapé">
                             </div>
@@ -182,37 +177,21 @@ async function fillCartDetails({ id, quantity, color }) {
                             </div>
                             </div>
                         </article> `
-        resolve()
-    })
+
 }
 
-
-
-//Crée une card pour tous les produits du panier avec fillCartDetails, une fois terminé, renvoie resolve()
-function addEachProductCard() {
-    let processDone = false;
-    return new Promise((resolve, reject) => {
-        cart.map(product => {
-            fillCartDetails(product)
-                .then(response => {
-                    const myInput = document.getElementsByClassName("itemQuantity");
-                    if (myInput.length == cart.length)
-                        processDone = true;
-                    if (processDone)
-                        resolve()
-                })
-        })
-    })
+function findElementWithDataset(parent){
+    const idToCheck = parent.dataset.id
+    const colorToCheck = parent.dataset.color
+    const indexToFind = cart.findIndex(product => product.id == idToCheck && product.color == colorToCheck)
+    return indexToFind;
 }
-
 
 
 //Modification de la quantité du produit
 function changeElement(event) {
     const elementToChange = event.target.closest("article")
-    const idToChange = elementToChange.dataset.id
-    const colorToChange = elementToChange.dataset.color
-    const indexToChange = cart.findIndex(product => product.id == idToChange && product.color == colorToChange)
+    const indexToChange =  findElementWithDataset(elementToChange)
     let newQuantity = parseInt(event.target.value)
     if (newQuantity > 100 || newQuantity <= 0 || isNaN(newQuantity)) {
         event.target.value = cart[indexToChange].quantity
@@ -220,8 +199,7 @@ function changeElement(event) {
     else {
         cart[indexToChange].quantity = newQuantity;
         totalQuantity[indexToChange] = newQuantity;
-        calculTotalQuantity(totalQuantity)
-        calculTotalPrice(totalPrice, totalQuantity)
+        updateTotals()
         localStorage.setItem("cart", JSON.stringify(cart));
     }
 }
@@ -231,14 +209,11 @@ function changeElement(event) {
 function deleteElement(event) {
     const elementToDelete = event.target.closest("article")
     cartItems.removeChild(elementToDelete)
-    const idToDelete = elementToDelete.dataset.id
-    const colorToDelete = elementToDelete.dataset.color
-    const indexToDelete = cart.findIndex(product => product.id == idToDelete && product.color == colorToDelete)
+    const indexToDelete = findElementWithDataset(elementToDelete)
     cart.splice(indexToDelete, 1)
     totalQuantity.splice(indexToDelete, 1)
     totalPrice.splice(indexToDelete, 1)
-    calculTotalQuantity(totalQuantity)
-    calculTotalPrice(totalPrice, totalQuantity)
+    updateTotals()
     localStorage.setItem("cart", JSON.stringify(cart));
 }
 
@@ -261,6 +236,11 @@ function calculTotalQuantity(quantityArray) {
         total += quantityArray[i];
     }
     totalQuantityElement.textContent = total;
+}
+
+function updateTotals(){
+    calculTotalQuantity(totalQuantity)
+    calculTotalPrice(totalPrice, totalQuantity)
 }
 
 
