@@ -22,30 +22,9 @@ function isObjectEmpty(obj) {
     return (Object.getOwnPropertyNames(obj).length === 0)
 }
 
-//Récupère un produit dans la base de donnée
-function getOneProduct(id) {
-    return new Promise((resolve, reject) => {
-        const url = 'http://localhost:3000/api/products/' + id;
-        const options = {
-            method: 'GET',
-            headers: {
-                Accept: 'application/json',
-                'Content-type': 'application/json'
-            }
-        }
-        fetch(url, options)
-            .then(reponse => reponse.json())
-            .then(data => {
-                thisProduct = data;
-                resolve();
-            })
-            .catch(err => console.log("Il y a erreur", err))
-    });
-}
-
 //Vérifie si les données du produit récupéré existe bien
 async function logProduct() {
-    await getOneProduct(productId);
+    thisProduct = await getOneProduct(productId);
     if (isObjectEmpty(thisProduct)) {
         noExistingId()
     }

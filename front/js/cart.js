@@ -47,7 +47,7 @@ if (document.URL.includes("cart.html")) {
 
         cart.forEach(element => {
             fillCartDetails(element).then(response => {
-                if(element === cart[cart.length-1]){
+                if (element === cart[cart.length - 1]) {
                     console.log("last item")
                     cartItems.innerHTML = itemProduct
                     updateTotals()
@@ -135,23 +135,6 @@ else if (document.URL.includes("confirmation.html")) {
 /***FONCTIONS ***/
 
 
-//Récupère un produit dans l'API
-function getOneProduct(id) {
-    const url = 'http://localhost:3000/api/products/' + id;
-    const options = {
-        method: 'GET',
-        headers: {
-            Accept: 'application/json',
-            'Content-type': 'application/json'
-        }
-    }
-    return fetch(url, options)
-        .then(reponse => reponse.json())
-        .catch(err => console.log("Il y a erreur", err))
-}
-
-
-
 //Crée une card du produit dans le panier
 async function fillCartDetails({ id, quantity, color }) {
     const productInCart = await getOneProduct(id);
@@ -180,7 +163,7 @@ async function fillCartDetails({ id, quantity, color }) {
 
 }
 
-function findElementWithDataset(parent){
+function findElementWithDataset(parent) {
     const idToCheck = parent.dataset.id
     const colorToCheck = parent.dataset.color
     const indexToFind = cart.findIndex(product => product.id == idToCheck && product.color == colorToCheck)
@@ -191,7 +174,7 @@ function findElementWithDataset(parent){
 //Modification de la quantité du produit
 function changeElement(event) {
     const elementToChange = event.target.closest("article")
-    const indexToChange =  findElementWithDataset(elementToChange)
+    const indexToChange = findElementWithDataset(elementToChange)
     let newQuantity = parseInt(event.target.value)
     if (newQuantity > 100 || newQuantity <= 0 || isNaN(newQuantity)) {
         event.target.value = cart[indexToChange].quantity
@@ -238,31 +221,11 @@ function calculTotalQuantity(quantityArray) {
     totalQuantityElement.textContent = total;
 }
 
-function updateTotals(){
+function updateTotals() {
     calculTotalQuantity(totalQuantity)
     calculTotalPrice(totalPrice, totalQuantity)
 }
 
 
-//Passe la commande, récupère le numéro de celle-ci et renvoie vers confirmation.html
-function createOrder(request) {
-    const url = 'http://localhost:3000/api/products/order';
-    const options = {
-        method: 'POST',
-        headers: {
-            Accept: 'application/json',
-            'Content-type': 'application/json'
-        },
-        body: JSON.stringify(request)
-    }
-    fetch(url, options)
-        .then(reponse => reponse.json())
-        .then(data => {
-            console.log("Mon order ID : ", data.orderId)
-            window.location.href = `./confirmation.html?orderid=${data.orderId}`
-            localStorage.removeItem("cart")
-        })
-        .catch(err => console.log("Il y a erreur", err))
-}
 
 
