@@ -5,22 +5,12 @@ const itemDescription = document.getElementById("description")
 const itemColors = document.getElementById("colors")
 const addButton = document.getElementById("addToCart")
 
-
 const productUrl = new URLSearchParams(window.location.search)
 const productId = productUrl.get('id')
 
 let thisProduct = [];
-let cart = [];
+let cart = checkCartStorage()
 
-//Vérifie s'il y a déjà un panier existant dans le localStorage
-if (localStorage.getItem("cart")) {
-    cart = JSON.parse(localStorage.getItem("cart"));
-}
-
-//Vérifie si un objet est vide ou non
-function isObjectEmpty(obj) {
-    return (Object.getOwnPropertyNames(obj).length === 0)
-}
 
 //Vérifie si les données du produit récupéré existe bien
 async function logProduct() {
@@ -62,7 +52,7 @@ addButton.addEventListener("click", () => {
     else if (document.getElementById("quantity").value === 0 || document.getElementById("quantity").value > 100)
         alert("Vous devez sélectionner entre 1 et 100 produit pour pouvoir l'ajouter au panier")
     else {
-        alert("Produit ajouté")
+        //alert("Produit ajouté")
         const productToAdd = {
             "id": productId,
             "quantity": parseInt(document.getElementById("quantity").value),
@@ -81,5 +71,8 @@ addButton.addEventListener("click", () => {
     localStorage.setItem("cart", JSON.stringify(cart));
 })
 
-logProduct()
+
+document.addEventListener("DOMContentLoaded", (event) => {
+    logProduct()
+});
 

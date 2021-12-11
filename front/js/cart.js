@@ -23,23 +23,19 @@ const arrayNotNumberError = [firstNameErrorMsg, lastNameErrorMsg, cityErrorMsg]
 
 const confirmationOrderId = document.getElementById("orderId")
 
-let cart = [];
+let cart = checkCartStorage()
 let totalQuantity = []
 let totalPrice = []
 let itemProduct = '';
 
+
 document.addEventListener("DOMContentLoaded", (event) => {
-    console.log("DOM entièrement chargé et analysé");
-});
 
-//Comme cart.html et confirmation.html utilise le même fichier JS, on utile un if/else if pour savoir dans quel page on se trouve
-//Sinon on obtient des erreurs dans la console car des élements de cart.html n'exite pas dans confirmation.html et vice versa
-if (document.URL.includes("cart.html")) {
+    //Comme cart.html et confirmation.html utilise le même fichier JS, on utile un if/else if pour savoir dans quel page on se trouve
+    //Sinon on obtient des erreurs dans la console car des élements de cart.html n'exite pas dans confirmation.html et vice versa
+    if (document.URL.includes("cart.html")) {
 
-    let readyToSendForm = true;
-
-    if (localStorage.getItem("cart")) {
-        cart = JSON.parse(localStorage.getItem("cart"));
+        let readyToSendForm = true;
 
         for (let i = 0; i < cart.length; i++) {
             totalQuantity.push(cart[i].quantity)
@@ -48,7 +44,6 @@ if (document.URL.includes("cart.html")) {
         cart.forEach(element => {
             fillCartDetails(element).then(response => {
                 if (element === cart[cart.length - 1]) {
-                    console.log("last item")
                     cartItems.innerHTML = itemProduct
                     updateTotals()
                     const myInputArray = document.getElementsByClassName("itemQuantity")
@@ -65,72 +60,74 @@ if (document.URL.includes("cart.html")) {
 
         });
 
-    }
 
 
-    //Vérifie qu'il n'y a aucun chiffre ni caractères spéciaux dans le prénom, le nom et la ville
-    for (let i = 0; i < arrayNotNumberInput.length; i++) {
-        arrayNotNumberInput[i].addEventListener('keyup', () => {
-            const regexNumberOrSpecial = /\W|\d/
-            if (regexNumberOrSpecial.test(arrayNotNumberInput[i].value)) {
-                arrayNotNumberError[i].textContent = "Vous ne pouvez pas écrire de chiffre ou de caractères spéciaux"
-                readyToSendForm = false;
-            }
-            else {
-                arrayNotNumberError[i].textContent = ""
+        //Vérifie qu'il n'y a aucun chiffre ni caractères spéciaux dans le prénom, le nom et la ville
+        for (let i = 0; i < arrayNotNumberInput.length; i++) {
+            arrayNotNumberInput[i].addEventListener('keyup', () => {
+                const regexNumberOrSpecial = /\W|\d/
+                if (regexNumberOrSpecial.test(arrayNotNumberInput[i].value)) {
+                    arrayNotNumberError[i].textContent = "Vous ne pouvez pas écrire de chiffre ou de caractères spéciaux"
+                    readyToSendForm = false;
+                }
+                else {
+                    arrayNotNumberError[i].textContent = ""
+                    readyToSendForm = true;
+                }
+
+
+            })
+        }
+
+        //Vérifie qu'il s'agit bien d'un email
+        emailInput.addEventListener('keyup', () => {
+            const regexEmail = /\S+@\S+\.\S+/
+            if (regexEmail.test(emailInput.value)) {
+                emailErrorMsg.textContent = ""
                 readyToSendForm = true;
             }
+            else {
+                emailErrorMsg.textContent = "Veuillez entrer un email valide"
+                readyToSendForm = false;
+            }
+        })
 
-
+        orderForm.addEventListener('submit', (e) => {
+            e.preventDefault();
+            //On vérifie que les entrées du formulaire ne sont pas vides
+            if (firstNameInput.value === '' || lastNameInput.value === '' || addressInput.value === '' || cityInput.value === '' || emailInput.value === '' || !readyToSendForm) {
+                alert("Nous ne pouvons pas valider votre commande, le formulaire n'a pas été correctement rempli.")
+            }
+            else if (cart.length === 0) {
+                alert("Votre panier est vide.")
+            }
+            else {
+                const finalCart = cart.map(product => product.id)
+                const myRequest = {
+                    "contact": {
+                        "firstName": firstNameInput.value,
+                        "lastName": lastNameInput.value,
+                        "address": addressInput.value,
+                        "city": cityInput.value,
+                        "email": emailInput.value
+                    },
+                    "products": finalCart
+                }
+                createOrder(myRequest)
+            }
         })
     }
 
-    //Vérifie qu'il s'agit bien d'un email
-    emailInput.addEventListener('keyup', () => {
-        const regexEmail = /\S+@\S+\.\S+/
-        if (regexEmail.test(emailInput.value)) {
-            emailErrorMsg.textContent = ""
-            readyToSendForm = true;
-        }
-        else {
-            emailErrorMsg.textContent = "Veuillez entrer un email valide"
-            readyToSendForm = false;
-        }
-    })
+    else if (document.URL.includes("confirmation.html")) {
 
-    orderForm.addEventListener('submit', (e) => {
-        e.preventDefault();
-        //On vérifie que les entrées du formulaire ne sont pas vides
-        if (firstNameInput.value === '' || lastNameInput.value === '' || addressInput.value === '' || cityInput.value === '' || emailInput.value === '' || !readyToSendForm) {
-            alert("Nous ne pouvons pas valider votre commande, le formulaire n'a pas été correctement rempli.")
-        }
-        else if (cart.length === 0) {
-            alert("Votre panier est vide.")
-        }
-        else {
-            const finalCart = cart.map(product => product.id)
-            const myRequest = {
-                "contact": {
-                    "firstName": firstNameInput.value,
-                    "lastName": lastNameInput.value,
-                    "address": addressInput.value,
-                    "city": cityInput.value,
-                    "email": emailInput.value
-                },
-                "products": finalCart
-            }
-            createOrder(myRequest)
-        }
-    })
-}
+        const orderUrl = new URLSearchParams(window.location.search)
+        const orderId = orderUrl.get('orderid')
 
-else if (document.URL.includes("confirmation.html")) {
+        confirmationOrderId.textContent = orderId
+    }
 
-    const orderUrl = new URLSearchParams(window.location.search)
-    const orderId = orderUrl.get('orderid')
 
-    confirmationOrderId.textContent = orderId
-}
+});
 
 /***FONCTIONS ***/
 
@@ -163,6 +160,7 @@ async function fillCartDetails({ id, quantity, color }) {
 
 }
 
+//Cette fonction permet de trouver à quel élément du panier correspond celui sur lequel on a cliqué (pour modifier ou supprimer)
 function findElementWithDataset(parent) {
     const idToCheck = parent.dataset.id
     const colorToCheck = parent.dataset.color

@@ -1,3 +1,5 @@
+/*** FONCTIONS API ***/
+
 //Récupère un produit dans l'API
 function getOneProduct(id) {
     const url = 'http://localhost:3000/api/products/' + id;
@@ -48,4 +50,22 @@ function createOrder(request) {
             localStorage.removeItem("cart")
         })
         .catch(err => console.log("Il y a erreur", err))
+}
+
+
+/*** AUTRES FONCTIONS  ***/
+
+//Vérifie s'il y a déjà un panier existant dans le localStorage, sinon renvoie un array vide
+function checkCartStorage(){
+    if (localStorage.getItem("cart")) {
+        return JSON.parse(localStorage.getItem("cart"));
+    }
+    else{
+        return []
+    }
+}
+
+//Vérifie si un objet est vide ou non
+function isObjectEmpty(obj) {
+    return (Object.getOwnPropertyNames(obj).length === 0)
 }

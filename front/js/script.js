@@ -22,4 +22,6 @@ async function logProducts() {
   items_section.innerHTML = itemProduct
 }
 
-logProducts();
+document.addEventListener("DOMContentLoaded", (event) => {
+  logProducts();
+});
