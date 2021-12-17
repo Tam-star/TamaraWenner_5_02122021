@@ -52,11 +52,15 @@ addButton.addEventListener("click", () => {
     else if (document.getElementById("quantity").value === 0 || document.getElementById("quantity").value > 100)
         alert("Vous devez sélectionner entre 1 et 100 produit pour pouvoir l'ajouter au panier")
     else {
-        //alert("Produit ajouté")
+        //On construit un objet productToAdd qui contient toutes les informations dont le panier aura besoin, 
+        //ce qui évite de faire un nouvel appel à l'API dans cart.js
         const productToAdd = {
             "id": productId,
             "quantity": parseInt(document.getElementById("quantity").value),
-            "color": itemColors.options[itemColors.selectedIndex].value
+            "color": itemColors.options[itemColors.selectedIndex].value,
+            "price": thisProduct.price,
+            "name": thisProduct.name,
+            "imageUrl": thisProduct.imageUrl
         }
         let productNotInCart = true;
         cart.map(product => {

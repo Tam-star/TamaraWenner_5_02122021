@@ -42,32 +42,26 @@ document.addEventListener("DOMContentLoaded", (event) => {
         }
 
         cart.forEach(element => {
-            fillCartDetails(element).then(response => {
-                if (element === cart[cart.length - 1]) {
-                    cartItems.innerHTML = itemProduct
-                    updateTotals()
-                    const myInputArray = document.getElementsByClassName("itemQuantity")
-                    for (let i = 0; i < myInputArray.length; i++) {
-                        myInputArray[i].addEventListener('change', changeElement)
-                    }
-                    const myDeleteArray = document.getElementsByClassName("deleteItem")
-                    for (let i = 0; i < myDeleteArray.length; i++) {
-                        myDeleteArray[i].addEventListener('click', deleteElement)
-                    }
-                }
+            fillCartDetails(element)
+        })
 
-            })
-
-        });
+        cartItems.innerHTML = itemProduct
+        updateTotals()
+        document.querySelectorAll('.itemQuantity').forEach(item => {
+            item.addEventListener('change', changeElement)
+        })
+        document.querySelectorAll('.deleteItem').forEach(item => {
+            item.addEventListener('click', deleteElement)
+        })
+        
 
 
-
-        //Vérifie qu'il n'y a aucun chiffre ni caractères spéciaux dans le prénom, le nom et la ville
+        //Vérifie qu'il n'y a aucun chiffre dans le prénom, le nom et la ville
         for (let i = 0; i < arrayNotNumberInput.length; i++) {
             arrayNotNumberInput[i].addEventListener('keyup', () => {
-                const regexNumberOrSpecial = /\W|\d/
+                const regexNumberOrSpecial = /\d/
                 if (regexNumberOrSpecial.test(arrayNotNumberInput[i].value)) {
-                    arrayNotNumberError[i].textContent = "Vous ne pouvez pas écrire de chiffre ou de caractères spéciaux"
+                    arrayNotNumberError[i].textContent = "Vous ne pouvez pas écrire de chiffre"
                     readyToSendForm = false;
                 }
                 else {
@@ -132,19 +126,18 @@ document.addEventListener("DOMContentLoaded", (event) => {
 /***FONCTIONS ***/
 
 
-//Crée une card du produit dans le panier
-async function fillCartDetails({ id, quantity, color }) {
-    const productInCart = await getOneProduct(id);
-    totalPrice.push(productInCart.price);
+//Crée une card du produit dans le panier 
+function fillCartDetails({ id, quantity, color, name, price, imageUrl }) {
+    totalPrice.push(price);
     itemProduct += `<article class="cart__item" data-id="${id}" data-color="${color}">
                             <div class="cart__item__img">
-                            <img src="${productInCart.imageUrl}" alt="Photographie d'un canapé">
+                            <img src="${imageUrl}" alt="Photographie d'un canapé">
                             </div>
                             <div class="cart__item__content">
                             <div class="cart__item__content__description">
-                                <h2>${productInCart.name}</h2>
+                                <h2>${name}</h2>
                                 <p>${color}</p>
-                                <p>${productInCart.price} €</p>
+                                <p>${price} €</p>
                             </div>
                             <div class="cart__item__content__settings">
                                 <div class="cart__item__content__settings__quantity">
